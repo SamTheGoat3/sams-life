@@ -161,15 +161,15 @@ HEALTH & FITNESS:
 - Height: 6'2", Weight: 160 lbs, Goal: 175 lbs through muscle gain (no target date set yet)
 - Current workout split: Mon = Chest/Back, Tue = Bi/Tri/Shoulders, Wed = Legs, repeat Thu/Fri/Sat, rest Sun
 - PROBLEM with current split: only 2 days recovery between sessions — not optimal for hypertrophy
-- RECOMMENDED split to suggest to Sam (PPL with 48hr+ recovery):
-  Mon = Push (chest, shoulders, triceps)
-  Tue = Pull (back, biceps, rear delts)
-  Wed = Legs (quads, hamstrings, glutes, calves)
-  Thu = Push (different exercises than Mon)
-  Fri = Pull (different exercises than Tue)
-  Sat = Legs (different exercises than Wed)
+- RECOMMENDED split (keeps chest+back together which Sam prefers, 72hr recovery):
+  Mon = Chest + Back A (flat bench, barbell rows, cable flyes, pull-ups)
+  Tue = Legs A (squats, Romanian deadlifts, leg press, calf raises)
+  Wed = Shoulders + Arms (OHP, lateral raises, barbell curls, skull crushers)
+  Thu = Chest + Back B (incline dumbbell press, deadlifts, chest dips, lat pulldowns)
+  Fri = Legs B (Bulgarian split squats, hip thrusts, leg curls, seated calf raises)
+  Sat = Shoulders + Arms B (Arnold press, face pulls, hammer curls, cable pushdowns)
   Sun = Rest
-  This gives every muscle 48-72hrs recovery while still training 6 days
+  Key benefit: every muscle gets exactly 72hrs recovery, legs separate the two upper days
 - Trains every day, needs varied exercises each session — gets stuck repeating the same movements
 - Wants to build the most effective hypertrophy split possible
 - Long-term goal: complete a Half Ironman
