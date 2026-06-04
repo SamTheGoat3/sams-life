@@ -55,16 +55,17 @@ export default function Home() {
     setLoading(false)
   }
 
-  async function fetchSales(period: string) {
+  async function fetchSales(period: string, bust = false) {
     setSalesLoading(true)
     setSalesPeriod(period)
     try {
       if (period === 'alltime') {
         await fetchAllTime()
       } else {
+        const bustParam = bust ? '&bust=1' : ''
         const [shopify, amazon] = await Promise.all([
           fetch(`/api/shopify?type=${period}`).then(r => r.json()),
-          fetch(`/api/amazon?type=${period}`).then(r => r.json())
+          fetch(`/api/amazon?type=${period}${bustParam}`).then(r => r.json())
         ])
         const totalRevenue = (parseFloat(shopify.totalRevenue || 0) + parseFloat(amazon.totalRevenue || 0)).toFixed(2)
         const totalOrders = (shopify.totalOrders || 0) + (amazon.totalOrders || 0)
@@ -249,7 +250,7 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <button onClick={() => { if (salesPeriod === 'alltime') { localStorage.removeItem('allTimeSales') } fetchSales(salesPeriod) }} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #444', background: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' as const }}>Reset</button>
+              <button onClick={() => { if (salesPeriod === 'alltime') { localStorage.removeItem('allTimeSales') } fetchSales(salesPeriod, true) }} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #444', background: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' as const }}>Reset</button>
             </div>
             {salesLoading ? (
               <div style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Loading...</div>
@@ -260,10 +261,7 @@ export default function Home() {
                   <div style={styles.bigNum}>${salesData.totalRevenue}</div>
                   <div style={styles.label}>{salesData.totalOrders} orders combined</div>
                   {salesData.lastSynced && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                      <div style={{ color: '#555', fontSize: 12 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>
-                      <button onClick={() => { localStorage.removeItem('allTimeSales'); fetchSales('alltime') }} style={{ fontSize: 11, color: '#555', background: 'none', border: '1px solid #333', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>Reset</button>
-                    </div>
+                    <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>

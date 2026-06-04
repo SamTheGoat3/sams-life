@@ -17,8 +17,9 @@ async function getAmazonToken() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') || 'today'
+  const bust = searchParams.get('bust') === '1'
 
-  if (cache[type] && Date.now() - cache[type].ts < CACHE_TTL) {
+  if (!bust && cache[type] && Date.now() - cache[type].ts < CACHE_TTL) {
     return NextResponse.json(cache[type].data)
   }
 
