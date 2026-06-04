@@ -237,7 +237,12 @@ export default function Home() {
                   <div style={styles.label}>Total Revenue</div>
                   <div style={styles.bigNum}>${salesData.totalRevenue}</div>
                   <div style={styles.label}>{salesData.totalOrders} orders combined</div>
-                  {salesData.lastSynced && <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>}
+                  {salesData.lastSynced && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                      <div style={{ color: '#555', fontSize: 12 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>
+                      <button onClick={() => { localStorage.removeItem('allTimeSales'); fetchSales('alltime') }} style={{ fontSize: 11, color: '#555', background: 'none', border: '1px solid #333', borderRadius: 6, padding: '2px 8px', cursor: 'pointer' }}>Reset</button>
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
