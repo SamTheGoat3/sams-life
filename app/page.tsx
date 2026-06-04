@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 type WorkoutLog = { date: string; workout: string }
-type Tab = 'chat' | 'sales' | 'workout'
+type Tab = 'chat' | 'sales' | 'workout' | 'calendar'
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('chat')
@@ -19,6 +19,9 @@ export default function Home() {
   const [workoutInput, setWorkoutInput] = useState('')
   const [weight, setWeight] = useState<number[]>([])
   const [weightInput, setWeightInput] = useState('')
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
+  const [calendarLoading, setCalendarLoading] = useState(false)
+  const [calendarError, setCalendarError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -130,7 +133,22 @@ export default function Home() {
 
   useEffect(() => {
     if (tab === 'sales') fetchSales('today')
+    if (tab === 'calendar') fetchCalendar()
   }, [tab])
+
+  async function fetchCalendar() {
+    setCalendarLoading(true)
+    setCalendarError('')
+    try {
+      const res = await fetch('/api/calendar')
+      const data = await res.json()
+      if (data.error) setCalendarError(data.error)
+      setCalendarEvents(data.events || [])
+    } catch {
+      setCalendarError('Could not load calendar')
+    }
+    setCalendarLoading(false)
+  }
 
   function logWorkout() {
     if (!workoutInput.trim()) return
@@ -194,9 +212,9 @@ export default function Home() {
         <p style={styles.title}>Sam's Life</p>
       </div>
       <div style={styles.tabs}>
-        {(['chat', 'sales', 'workout'] as Tab[]).map(t => (
+        {(['chat', 'sales', 'workout', 'calendar'] as Tab[]).map(t => (
           <button key={t} style={styles.tab(tab === t)} onClick={() => setTab(t)}>
-            {t === 'chat' ? '💬 Chat' : t === 'sales' ? '💰 Sales' : '💪 Workout'}
+            {t === 'chat' ? '💬 Chat' : t === 'sales' ? '💰 Sales' : t === 'workout' ? '💪 Workout' : '📅 Cal'}
           </button>
         ))}
       </div>
@@ -276,6 +294,50 @@ export default function Home() {
                 )}
               </>
             ) : null}
+          </div>
+        )}
+
+        {tab === 'calendar' && (
+          <div style={{ flex: 1, overflowY: 'auto' as const, padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>Next 14 Days</div>
+              <button onClick={fetchCalendar} disabled={calendarLoading} style={{ padding: '6px 12px', borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#888', cursor: 'pointer', fontSize: 14 }}>↺ Refresh</button>
+            </div>
+            {calendarLoading ? (
+              <div style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Loading...</div>
+            ) : calendarError ? (
+              <div style={{ ...styles.card, color: '#f87171' }}>{calendarError}</div>
+            ) : calendarEvents.length === 0 ? (
+              <div style={{ color: '#555', textAlign: 'center', marginTop: 40 }}>No events in the next 14 days</div>
+            ) : (() => {
+              const today = new Date(); today.setHours(0,0,0,0)
+              const groups: Record<string, any[]> = {}
+              calendarEvents.forEach(e => {
+                const d = new Date(e.start); d.setHours(0,0,0,0)
+                const key = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+                if (!groups[key]) groups[key] = []
+                groups[key].push(e)
+              })
+              return Object.entries(groups).map(([day, events]) => (
+                <div key={day} style={{ marginBottom: 20 }}>
+                  <div style={{ color: '#888', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{day}</div>
+                  {events.map((e, i) => (
+                    <div key={e.id} style={{ ...styles.card, marginBottom: 8, padding: '14px 16px' }}>
+                      <div style={{ fontWeight: 600, fontSize: 15 }}>{e.title}</div>
+                      {!e.allDay && (
+                        <div style={{ color: '#888', fontSize: 13, marginTop: 4 }}>
+                          {new Date(e.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          {' – '}
+                          {new Date(e.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                      )}
+                      {e.allDay && <div style={{ color: '#888', fontSize: 13, marginTop: 4 }}>All day</div>}
+                      {e.location && <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>{e.location}</div>}
+                    </div>
+                  ))}
+                </div>
+              ))
+            })()}
           </div>
         )}
 
