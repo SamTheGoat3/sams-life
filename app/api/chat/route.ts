@@ -6,6 +6,34 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY
 
+async function getAmazonToken() {
+  const res = await axios.post('https://api.amazon.com/auth/o2/token', new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: process.env.AMAZON_REFRESH_TOKEN!,
+    client_id: process.env.AMAZON_CLIENT_ID!,
+    client_secret: process.env.AMAZON_CLIENT_SECRET!,
+  }), { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } })
+  return res.data.access_token
+}
+
+async function getAmazonData(period: string) {
+  const token = await getAmazonToken()
+  const now = new Date()
+  let createdAfter: string
+  if (period === 'today') { const s = new Date(now); s.setHours(0,0,0,0); createdAfter = s.toISOString() }
+  else if (period === 'week') { const s = new Date(now); s.setDate(s.getDate()-7); createdAfter = s.toISOString() }
+  else if (period === 'month') { const s = new Date(now); s.setDate(1); s.setHours(0,0,0,0); createdAfter = s.toISOString() }
+  else { createdAfter = '2020-01-01T00:00:00Z' }
+
+  const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', {
+    params: { MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID, CreatedAfter: createdAfter, OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,Canceled,Unfulfillable' },
+    headers: { 'x-amz-access-token': token, 'content-type': 'application/json' }
+  })
+  const orders = res.data.payload?.Orders || []
+  const revenue = orders.reduce((s: number, o: any) => s + parseFloat(o.OrderTotal?.Amount || '0'), 0)
+  return { period, orders: orders.length, revenue: revenue.toFixed(2) }
+}
+
 async function getShopifyData(period: string) {
   const base = `https://${SHOPIFY_STORE}/admin/api/2024-01`
   const headers = { 'X-Shopify-Access-Token': SHOPIFY_API_KEY! }
@@ -37,12 +65,15 @@ export async function POST(request: Request) {
   const userMessage = messages[messages.length - 1].content.toLowerCase()
 
   let shopifyContext = ''
+  let amazonContext = ''
+  const isSalesQuery = userMessage.includes('today') || userMessage.includes('sale') || userMessage.includes('order') || userMessage.includes('revenue') || userMessage.includes('money')
+  const isAmazonQuery = userMessage.includes('amazon')
+  const isShopifyQuery = userMessage.includes('shopify')
+
   try {
-    if (userMessage.includes('today') || userMessage.includes('sale') || userMessage.includes('order') || userMessage.includes('revenue') || userMessage.includes('money')) {
+    if (isSalesQuery && !isAmazonQuery) {
       const [today, week, month] = await Promise.all([
-        getShopifyData('today'),
-        getShopifyData('week'),
-        getShopifyData('month')
+        getShopifyData('today'), getShopifyData('week'), getShopifyData('month')
       ])
       shopifyContext = `
 LIVE SHOPIFY DATA:
@@ -53,6 +84,22 @@ LIVE SHOPIFY DATA:
     }
   } catch (e) {
     shopifyContext = 'Could not fetch Shopify data right now.'
+  }
+
+  try {
+    if (isSalesQuery && !isShopifyQuery) {
+      const [today, week, month] = await Promise.all([
+        getAmazonData('today'), getAmazonData('week'), getAmazonData('month')
+      ])
+      amazonContext = `
+LIVE AMAZON DATA:
+- Today: ${today.orders} orders, $${today.revenue} revenue
+- This week: ${week.orders} orders, $${week.revenue} revenue
+- This month: ${month.orders} orders, $${month.revenue} revenue
+`
+    }
+  } catch (e) {
+    amazonContext = 'Could not fetch Amazon data right now.'
   }
 
   const workoutContext = workoutLog?.length > 0
@@ -68,7 +115,7 @@ ABOUT SAM:
 - Needs fresh workout variety to keep building muscle (progressive overload)
 - Based in Utah (Orem, UT)
 
-${shopifyContext}${workoutContext}
+${shopifyContext}${amazonContext}${workoutContext}
 
 When asked about workouts, give specific, varied routines he hasn't likely done recently. Focus on hypertrophy (muscle building) with compound + isolation movements. Keep responses concise and direct — Sam is a busy entrepreneur.
 
