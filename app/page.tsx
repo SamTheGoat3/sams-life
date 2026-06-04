@@ -56,17 +56,72 @@ export default function Home() {
     setSalesLoading(true)
     setSalesPeriod(period)
     try {
-      const [shopify, amazon] = await Promise.all([
-        fetch(`/api/shopify?type=${period}`).then(r => r.json()),
-        fetch(`/api/amazon?type=${period}`).then(r => r.json())
-      ])
-      const totalRevenue = (parseFloat(shopify.totalRevenue || 0) + parseFloat(amazon.totalRevenue || 0)).toFixed(2)
-      const totalOrders = (shopify.totalOrders || 0) + (amazon.totalOrders || 0)
-      setSalesData({ totalRevenue, totalOrders, shopify, amazon })
+      if (period === 'alltime') {
+        await fetchAllTime()
+      } else {
+        const [shopify, amazon] = await Promise.all([
+          fetch(`/api/shopify?type=${period}`).then(r => r.json()),
+          fetch(`/api/amazon?type=${period}`).then(r => r.json())
+        ])
+        const totalRevenue = (parseFloat(shopify.totalRevenue || 0) + parseFloat(amazon.totalRevenue || 0)).toFixed(2)
+        const totalOrders = (shopify.totalOrders || 0) + (amazon.totalOrders || 0)
+        setSalesData({ totalRevenue, totalOrders, shopify, amazon })
+      }
     } catch {
       setSalesData({ error: 'Could not load sales data' })
     }
     setSalesLoading(false)
+  }
+
+  async function fetchAllTime() {
+    const STORAGE_KEY = 'allTimeSales'
+    const saved = localStorage.getItem(STORAGE_KEY)
+    const cached = saved ? JSON.parse(saved) : null
+
+    if (!cached) {
+      // First time — full scan
+      const [shopify, amazon] = await Promise.all([
+        fetch(`/api/shopify?type=alltime`).then(r => r.json()),
+        fetch(`/api/amazon?type=alltime`).then(r => r.json())
+      ])
+      const snapshot = {
+        shopifyRevenue: parseFloat(shopify.totalRevenue || 0),
+        amazonRevenue: parseFloat(amazon.totalRevenue || 0),
+        shopifyOrders: shopify.totalOrders || 0,
+        amazonOrders: amazon.totalOrders || 0,
+        lastSynced: new Date().toISOString()
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
+      setSalesData({
+        totalRevenue: (snapshot.shopifyRevenue + snapshot.amazonRevenue).toFixed(2),
+        totalOrders: snapshot.shopifyOrders + snapshot.amazonOrders,
+        shopify: { totalRevenue: snapshot.shopifyRevenue.toFixed(2), totalOrders: snapshot.shopifyOrders },
+        amazon: { totalRevenue: snapshot.amazonRevenue.toFixed(2), totalOrders: snapshot.amazonOrders },
+        lastSynced: snapshot.lastSynced
+      })
+    } else {
+      // Incremental — only fetch since last sync
+      const since = encodeURIComponent(cached.lastSynced)
+      const [shopify, amazon] = await Promise.all([
+        fetch(`/api/shopify?type=since&since=${since}`).then(r => r.json()),
+        fetch(`/api/amazon?type=since&since=${since}`).then(r => r.json())
+      ])
+      const updated = {
+        shopifyRevenue: cached.shopifyRevenue + parseFloat(shopify.totalRevenue || 0),
+        amazonRevenue: cached.amazonRevenue + parseFloat(amazon.totalRevenue || 0),
+        shopifyOrders: cached.shopifyOrders + (shopify.totalOrders || 0),
+        amazonOrders: cached.amazonOrders + (amazon.totalOrders || 0),
+        lastSynced: new Date().toISOString()
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+      setSalesData({
+        totalRevenue: (updated.shopifyRevenue + updated.amazonRevenue).toFixed(2),
+        totalOrders: updated.shopifyOrders + updated.amazonOrders,
+        shopify: { totalRevenue: updated.shopifyRevenue.toFixed(2), totalOrders: updated.shopifyOrders },
+        amazon: { totalRevenue: updated.amazonRevenue.toFixed(2), totalOrders: updated.amazonOrders },
+        lastSynced: updated.lastSynced
+      })
+    }
   }
 
   useEffect(() => {
@@ -182,6 +237,7 @@ export default function Home() {
                   <div style={styles.label}>Total Revenue</div>
                   <div style={styles.bigNum}>${salesData.totalRevenue}</div>
                   <div style={styles.label}>{salesData.totalOrders} orders combined</div>
+                  {salesData.lastSynced && <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>}
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
