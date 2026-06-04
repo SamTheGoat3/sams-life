@@ -20,17 +20,12 @@ export async function GET() {
 
     const res = await axios.get('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
       headers: { Authorization: `Bearer ${token}` },
-      params: {
-        timeMin,
-        timeMax,
-        orderBy: 'startTime',
-        singleEvents: true,
-        maxResults: 50,
-      }
+      params: { timeMin, timeMax, orderBy: 'startTime', singleEvents: true, maxResults: 50 }
     })
 
     const events = (res.data.items || []).map((e: any) => ({
       id: e.id,
+      recurringEventId: e.recurringEventId || null,
       title: e.summary || '(No title)',
       start: e.start?.dateTime || e.start?.date,
       end: e.end?.dateTime || e.end?.date,
@@ -42,5 +37,42 @@ export async function GET() {
   } catch (e: any) {
     const msg = e.response?.data?.error?.message || e.message
     return NextResponse.json({ error: msg, events: [] }, { status: 200 })
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json()
+    const token = await getGoogleToken()
+
+    if (body.action === 'delete') {
+      const { eventId, deleteAll } = body
+      const idToDelete = deleteAll ? eventId.split('_')[0] : eventId
+      await axios.delete(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${idToDelete}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      return NextResponse.json({ success: true })
+    }
+
+    if (body.action === 'create') {
+      const { title, start, end, allDay } = body
+      const event: any = {
+        summary: title,
+        start: allDay ? { date: start } : { dateTime: start, timeZone: 'America/Denver' },
+        end: allDay ? { date: end } : { dateTime: end, timeZone: 'America/Denver' },
+      }
+      const res = await axios.post(
+        'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+        event,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      return NextResponse.json({ success: true, event: res.data })
+    }
+
+    return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
+  } catch (e: any) {
+    const msg = e.response?.data?.error?.message || e.message
+    return NextResponse.json({ error: msg }, { status: 200 })
   }
 }

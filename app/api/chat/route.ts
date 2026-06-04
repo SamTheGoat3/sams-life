@@ -5,6 +5,7 @@ import axios from 'axios'
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY
+const BASE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
 
 async function getAmazonToken() {
   const res = await axios.post('https://api.amazon.com/auth/o2/token', new URLSearchParams({
@@ -60,73 +61,153 @@ async function getShopifyData(period: string) {
   return { period, orders: countRes.data.count, revenue: revenue.toFixed(2) }
 }
 
+async function getCalendarEvents() {
+  const res = await fetch(`${BASE_URL}/api/calendar`)
+  return res.json()
+}
+
+async function calendarAction(action: string, params: any) {
+  const res = await fetch(`${BASE_URL}/api/calendar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...params })
+  })
+  return res.json()
+}
+
+const calendarTools: Anthropic.Tool[] = [
+  {
+    name: 'list_calendar_events',
+    description: 'List upcoming calendar events for the next 14 days',
+    input_schema: { type: 'object' as const, properties: {}, required: [] }
+  },
+  {
+    name: 'delete_calendar_event',
+    description: 'Delete a calendar event. Set deleteAll=true to delete all instances of a recurring event series.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        eventId: { type: 'string', description: 'The event ID to delete' },
+        deleteAll: { type: 'boolean', description: 'If true, deletes the entire recurring series' }
+      },
+      required: ['eventId']
+    }
+  },
+  {
+    name: 'create_calendar_event',
+    description: 'Create a new calendar event',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        title: { type: 'string', description: 'Event title' },
+        start: { type: 'string', description: 'Start datetime in ISO format (YYYY-MM-DDTHH:MM:SS) or date (YYYY-MM-DD) for all-day' },
+        end: { type: 'string', description: 'End datetime in ISO format or date for all-day' },
+        allDay: { type: 'boolean', description: 'Whether this is an all-day event' }
+      },
+      required: ['title', 'start', 'end']
+    }
+  }
+]
+
 export async function POST(request: Request) {
   const { messages, workoutLog } = await request.json()
   const userMessage = messages[messages.length - 1].content.toLowerCase()
 
   let shopifyContext = ''
   let amazonContext = ''
+  let calendarContext = ''
+
   const isSalesQuery = userMessage.includes('today') || userMessage.includes('sale') || userMessage.includes('order') || userMessage.includes('revenue') || userMessage.includes('money')
   const isAmazonQuery = userMessage.includes('amazon')
   const isShopifyQuery = userMessage.includes('shopify')
+  const isCalendarQuery = userMessage.includes('calendar') || userMessage.includes('event') || userMessage.includes('schedule') || userMessage.includes('meeting') || userMessage.includes('appointment') || userMessage.includes('delete') || userMessage.includes('add') || userMessage.includes('create')
 
   try {
     if (isSalesQuery && !isAmazonQuery) {
       const [today, week, month] = await Promise.all([
         getShopifyData('today'), getShopifyData('week'), getShopifyData('month')
       ])
-      shopifyContext = `
-LIVE SHOPIFY DATA:
-- Today: ${today.orders} orders, $${today.revenue} revenue
-- This week: ${week.orders} orders, $${week.revenue} revenue
-- This month: ${month.orders} orders, $${month.revenue} revenue
-`
+      shopifyContext = `\nLIVE SHOPIFY DATA:\n- Today: ${today.orders} orders, $${today.revenue}\n- This week: ${week.orders} orders, $${week.revenue}\n- This month: ${month.orders} orders, $${month.revenue}\n`
     }
-  } catch (e) {
-    shopifyContext = 'Could not fetch Shopify data right now.'
-  }
+  } catch (e) { shopifyContext = 'Could not fetch Shopify data.' }
 
   try {
     if (isSalesQuery && !isShopifyQuery) {
       const [today, week, month] = await Promise.all([
         getAmazonData('today'), getAmazonData('week'), getAmazonData('month')
       ])
-      amazonContext = `
-LIVE AMAZON DATA:
-- Today: ${today.orders} orders, $${today.revenue} revenue
-- This week: ${week.orders} orders, $${week.revenue} revenue
-- This month: ${month.orders} orders, $${month.revenue} revenue
-`
+      amazonContext = `\nLIVE AMAZON DATA:\n- Today: ${today.orders} orders, $${today.revenue}\n- This week: ${week.orders} orders, $${week.revenue}\n- This month: ${month.orders} orders, $${month.revenue}\n`
     }
-  } catch (e) {
-    amazonContext = 'Could not fetch Amazon data right now.'
-  }
+  } catch (e) { amazonContext = 'Could not fetch Amazon data.' }
+
+  try {
+    if (isCalendarQuery) {
+      const data = await getCalendarEvents()
+      if (data.events?.length > 0) {
+        calendarContext = `\nUPCOMING CALENDAR EVENTS:\n${data.events.map((e: any) => `- [${e.id}] ${e.title} on ${new Date(e.start).toLocaleString()} ${e.recurringEventId ? '(recurring, seriesId: ' + e.recurringEventId + ')' : ''}`).join('\n')}\n`
+      }
+    }
+  } catch (e) { calendarContext = '' }
 
   const workoutContext = workoutLog?.length > 0
-    ? `\nRECENT WORKOUTS LOGGED:\n${workoutLog.slice(-10).map((w: any) => `${w.date}: ${w.workout}`).join('\n')}`
+    ? `\nRECENT WORKOUTS:\n${workoutLog.slice(-10).map((w: any) => `${w.date}: ${w.workout}`).join('\n')}`
     : ''
 
-  const system = `You are Sam's personal AI assistant. You know everything about his life and business.
+  const system = `You are Sam's personal AI assistant with full access to his calendar, sales data, and workout log.
 
 ABOUT SAM:
 - Runs Wrinkless — an anti-wrinkle glass straw brand sold on Shopify, Amazon, Etsy, TikTok
 - Height: 6'2", Weight: 160 lbs, Goal: reach 175 lbs through muscle gain
-- Goes to the gym every day but tends to repeat the same workouts
-- Needs fresh workout variety to keep building muscle (progressive overload)
-- Based in Utah (Orem, UT)
+- Goes to the gym every day, needs varied workouts for progressive overload
+- Based in Utah (Orem, UT), timezone: America/Denver (Mountain Time)
 
-${shopifyContext}${amazonContext}${workoutContext}
+${shopifyContext}${amazonContext}${calendarContext}${workoutContext}
 
-When asked about workouts, give specific, varied routines he hasn't likely done recently. Focus on hypertrophy (muscle building) with compound + isolation movements. Keep responses concise and direct — Sam is a busy entrepreneur.
+You have tools to manage Sam's Google Calendar — you can list events, create new events, and delete events (including entire recurring series). When Sam asks you to add or delete calendar events, use the tools to actually do it. Confirm what you did after.
 
 Today's date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
 
-  const response = await client.messages.create({
+  const anthropicMessages = messages.map((m: any) => ({ role: m.role, content: m.content }))
+
+  let response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system,
-    messages: messages.map((m: any) => ({ role: m.role, content: m.content }))
+    tools: calendarTools,
+    messages: anthropicMessages
   })
 
-  return NextResponse.json({ content: response.content[0].type === 'text' ? response.content[0].text : '' })
+  // Handle tool use loop
+  while (response.stop_reason === 'tool_use') {
+    const toolUseBlock = response.content.find((b: any) => b.type === 'tool_use') as any
+    if (!toolUseBlock) break
+
+    let toolResult: any
+    try {
+      if (toolUseBlock.name === 'list_calendar_events') {
+        toolResult = await getCalendarEvents()
+      } else if (toolUseBlock.name === 'delete_calendar_event') {
+        toolResult = await calendarAction('delete', toolUseBlock.input)
+      } else if (toolUseBlock.name === 'create_calendar_event') {
+        toolResult = await calendarAction('create', toolUseBlock.input)
+      }
+    } catch (e: any) {
+      toolResult = { error: e.message }
+    }
+
+    response = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      system,
+      tools: calendarTools,
+      messages: [
+        ...anthropicMessages,
+        { role: 'assistant', content: response.content },
+        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(toolResult) }] }
+      ]
+    })
+  }
+
+  const text = response.content.find((b: any) => b.type === 'text') as any
+  return NextResponse.json({ content: text?.text || '' })
 }
