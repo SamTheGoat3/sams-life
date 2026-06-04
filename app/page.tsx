@@ -226,12 +226,15 @@ export default function Home() {
 
         {tab === 'sales' && (
           <div style={styles.salesContent}>
-            <div style={styles.periodRow}>
-              {['today', 'week', 'month', 'alltime'].map(p => (
-                <button key={p} style={styles.periodBtn(salesPeriod === p)} onClick={() => fetchSales(p)}>
-                  {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All Time'}
-                </button>
-              ))}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+              <div style={{ ...styles.periodRow, flex: 1, marginBottom: 0 }}>
+                {['today', 'week', 'month', 'alltime'].map(p => (
+                  <button key={p} style={styles.periodBtn(salesPeriod === p)} onClick={() => fetchSales(p)}>
+                    {p === 'today' ? 'Today' : p === 'week' ? 'Week' : p === 'month' ? 'Month' : 'All Time'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => fetchSales(salesPeriod)} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#888', cursor: 'pointer', fontSize: 16 }}>↺</button>
             </div>
             {salesLoading ? (
               <div style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Loading...</div>
