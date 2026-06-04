@@ -23,7 +23,7 @@ async function getAmazonData(period: string) {
   let createdAfter: string
   if (period === 'today') { const s = new Date(now); s.setHours(0,0,0,0); createdAfter = s.toISOString() }
   else if (period === 'week') { const s = new Date(now); s.setDate(s.getDate()-7); createdAfter = s.toISOString() }
-  else if (period === 'month') { const s = new Date(now); s.setDate(1); s.setHours(0,0,0,0); createdAfter = s.toISOString() }
+  else if (period === 'month') { const s = new Date(now); s.setDate(s.getDate()-30); s.setHours(0,0,0,0); createdAfter = s.toISOString() }
   else { createdAfter = '2020-01-01T00:00:00Z' }
 
   const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', {
@@ -46,7 +46,7 @@ async function getShopifyData(period: string) {
   } else if (period === 'week') {
     const s = new Date(now); s.setDate(s.getDate()-7); createdAtMin = s.toISOString()
   } else if (period === 'month') {
-    const s = new Date(now); s.setDate(1); s.setHours(0,0,0,0); createdAtMin = s.toISOString()
+    const s = new Date(now); s.setDate(s.getDate()-30); s.setHours(0,0,0,0); createdAtMin = s.toISOString()
   } else {
     createdAtMin = '2020-01-01T00:00:00Z'
   }

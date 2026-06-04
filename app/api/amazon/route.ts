@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     } else if (type === 'week') {
       const s = new Date(now); s.setDate(s.getDate()-7); createdAfter = s.toISOString()
     } else if (type === 'month') {
-      const s = new Date(now); s.setDate(1); s.setHours(0,0,0,0); createdAfter = s.toISOString()
+      const s = new Date(now); s.setDate(s.getDate()-30); s.setHours(0,0,0,0); createdAfter = s.toISOString()
     } else if (type === 'since') {
       createdAfter = searchParams.get('since') || '2020-01-01T00:00:00Z'
     } else {
