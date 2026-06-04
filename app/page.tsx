@@ -84,19 +84,20 @@ export default function Home() {
         fetch(`/api/shopify?type=alltime`).then(r => r.json()),
         fetch(`/api/amazon?type=alltime`).then(r => r.json())
       ])
+      const amazonOk = !amazon.error && parseFloat(amazon.totalRevenue || 0) > 0
       const snapshot = {
         shopifyRevenue: parseFloat(shopify.totalRevenue || 0),
-        amazonRevenue: parseFloat(amazon.totalRevenue || 0),
+        amazonRevenue: amazonOk ? parseFloat(amazon.totalRevenue) : null,
         shopifyOrders: shopify.totalOrders || 0,
-        amazonOrders: amazon.totalOrders || 0,
+        amazonOrders: amazonOk ? (amazon.totalOrders || 0) : null,
         lastSynced: new Date().toISOString()
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
       setSalesData({
-        totalRevenue: (snapshot.shopifyRevenue + snapshot.amazonRevenue).toFixed(2),
-        totalOrders: snapshot.shopifyOrders + snapshot.amazonOrders,
+        totalRevenue: (snapshot.shopifyRevenue + (snapshot.amazonRevenue || 0)).toFixed(2),
+        totalOrders: snapshot.shopifyOrders + (snapshot.amazonOrders || 0),
         shopify: { totalRevenue: snapshot.shopifyRevenue.toFixed(2), totalOrders: snapshot.shopifyOrders },
-        amazon: { totalRevenue: snapshot.amazonRevenue.toFixed(2), totalOrders: snapshot.amazonOrders },
+        amazon: { totalRevenue: amazonOk ? amazon.totalRevenue : 'Loading...', totalOrders: amazonOk ? amazon.totalOrders : '—', error: !amazonOk },
         lastSynced: snapshot.lastSynced
       })
     } else {
@@ -106,19 +107,22 @@ export default function Home() {
         fetch(`/api/shopify?type=since&since=${since}`).then(r => r.json()),
         fetch(`/api/amazon?type=since&since=${since}`).then(r => r.json())
       ])
+      const amazonOk = !amazon.error
+      const prevAmazonRevenue = cached.amazonRevenue ?? 0
+      const prevAmazonOrders = cached.amazonOrders ?? 0
       const updated = {
         shopifyRevenue: cached.shopifyRevenue + parseFloat(shopify.totalRevenue || 0),
-        amazonRevenue: cached.amazonRevenue + parseFloat(amazon.totalRevenue || 0),
+        amazonRevenue: amazonOk ? prevAmazonRevenue + parseFloat(amazon.totalRevenue || 0) : cached.amazonRevenue,
         shopifyOrders: cached.shopifyOrders + (shopify.totalOrders || 0),
-        amazonOrders: cached.amazonOrders + (amazon.totalOrders || 0),
+        amazonOrders: amazonOk ? prevAmazonOrders + (amazon.totalOrders || 0) : cached.amazonOrders,
         lastSynced: new Date().toISOString()
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
       setSalesData({
-        totalRevenue: (updated.shopifyRevenue + updated.amazonRevenue).toFixed(2),
-        totalOrders: updated.shopifyOrders + updated.amazonOrders,
+        totalRevenue: (updated.shopifyRevenue + (updated.amazonRevenue || 0)).toFixed(2),
+        totalOrders: updated.shopifyOrders + (updated.amazonOrders || 0),
         shopify: { totalRevenue: updated.shopifyRevenue.toFixed(2), totalOrders: updated.shopifyOrders },
-        amazon: { totalRevenue: updated.amazonRevenue.toFixed(2), totalOrders: updated.amazonOrders },
+        amazon: { totalRevenue: updated.amazonRevenue != null ? updated.amazonRevenue.toFixed(2) : 'Loading...', totalOrders: updated.amazonOrders ?? '—', error: !amazonOk },
         lastSynced: updated.lastSynced
       })
     }
