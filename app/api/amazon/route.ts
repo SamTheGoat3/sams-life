@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import axios from 'axios'
 
+const cache: Record<string, { data: any; ts: number }> = {}
+const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
 async function getAmazonToken() {
   const res = await axios.post('https://api.amazon.com/auth/o2/token', new URLSearchParams({
     grant_type: 'refresh_token',
@@ -14,6 +17,10 @@ async function getAmazonToken() {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const type = searchParams.get('type') || 'today'
+
+  if (cache[type] && Date.now() - cache[type].ts < CACHE_TTL) {
+    return NextResponse.json(cache[type].data)
+  }
 
   try {
     const token = await getAmazonToken()
@@ -51,7 +58,9 @@ export async function GET(request: Request) {
     const totalOrders = allOrders.length
     const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
 
-    return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) })
+    const result = { totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) }
+    cache[type] = { data: result, ts: Date.now() }
+    return NextResponse.json(result)
   } catch (e: any) {
     const msg = e.response?.data?.errors?.[0]?.message || e.message
     return NextResponse.json({ error: msg, totalRevenue: '0.00', totalOrders: 0 }, { status: 200 })
