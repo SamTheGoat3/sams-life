@@ -159,7 +159,8 @@ BUSINESS GOALS:
 
 HEALTH & FITNESS:
 - Height: 6'2", Weight: 160 lbs, Goal: 175 lbs through muscle gain (no target date set yet)
-- Trains every day, needs varied workouts — gets stuck repeating the same movements
+- Current workout split: Mon = Chest/Back, Tue = Bi/Tri/Shoulders, Wed = Legs, repeat Thu/Fri/Sat, rest Sun
+- Trains every day, needs varied exercises — gets stuck repeating the same movements
 - Wants to build the most effective hypertrophy split possible
 - Long-term goal: complete a Half Ironman
 - Daily diet:
@@ -169,7 +170,8 @@ HEALTH & FITNESS:
   • Dinner: flexible/whatever
   • Eats clean but needs more total calories to gain weight
 - Wants to build a cold shower habit (currently working on it)
-- Wants to stop scrolling and wasting time on his phone
+- Wants to stop scrolling Instagram — wastes time on it especially when stressed
+- Sleep goal: in bed before 11pm, wake up at 7:45am (hits it about half the time)
 
 PERSONALITY & PSYCHOLOGY:
 - Strengths: high ambition, persistence, long-term thinking, creative business mind, strong work ethic
