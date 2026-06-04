@@ -28,12 +28,15 @@ export async function GET(request: Request) {
     const now = new Date()
     let createdAfter: string
 
+    // Use Mountain Time (UTC-6 MDT) for day boundaries
+    const MT_OFFSET_MS = 6 * 60 * 60 * 1000
+    const nowMT = new Date(now.getTime() - MT_OFFSET_MS)
     if (type === 'today') {
-      const s = new Date(now); s.setHours(0,0,0,0); createdAfter = s.toISOString()
+      const s = new Date(nowMT); s.setUTCHours(0,0,0,0); createdAfter = new Date(s.getTime() + MT_OFFSET_MS).toISOString()
     } else if (type === 'week') {
-      const s = new Date(now); s.setDate(s.getDate()-7); createdAfter = s.toISOString()
+      const s = new Date(nowMT); s.setUTCDate(s.getUTCDate()-7); s.setUTCHours(0,0,0,0); createdAfter = new Date(s.getTime() + MT_OFFSET_MS).toISOString()
     } else if (type === 'month') {
-      const s = new Date(now); s.setDate(s.getDate()-30); s.setHours(0,0,0,0); createdAfter = s.toISOString()
+      const s = new Date(nowMT); s.setUTCDate(s.getUTCDate()-30); s.setUTCHours(0,0,0,0); createdAfter = new Date(s.getTime() + MT_OFFSET_MS).toISOString()
     } else if (type === 'since') {
       createdAfter = searchParams.get('since') || '2020-01-01T00:00:00Z'
     } else {
@@ -50,7 +53,7 @@ export async function GET(request: Request) {
         : {
             MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID,
             CreatedAfter: createdAfter,
-            OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Unfulfillable',
+            OrderStatuses: 'Pending,Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Unfulfillable',
           }
 
       const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', { params, headers })
