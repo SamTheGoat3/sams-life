@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', { params, headers })
       allOrders = allOrders.concat(res.data.payload?.Orders || [])
       nextToken = res.data.payload?.NextToken || null
-    } while (nextToken && allOrders.length < 500)
+    } while (nextToken)
 
     const totalOrders = allOrders.length
     const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
