@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import axios from 'axios'
+import { listEvents, deleteEvent, createEvent } from '@/app/lib/calendar'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY
-const BASE_URL = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
 
 async function getAmazonToken() {
   const res = await axios.post('https://api.amazon.com/auth/o2/token', new URLSearchParams({
@@ -61,19 +61,6 @@ async function getShopifyData(period: string) {
   return { period, orders: countRes.data.count, revenue: revenue.toFixed(2) }
 }
 
-async function getCalendarEvents() {
-  const res = await fetch(`${BASE_URL}/api/calendar`)
-  return res.json()
-}
-
-async function calendarAction(action: string, params: any) {
-  const res = await fetch(`${BASE_URL}/api/calendar`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action, ...params })
-  })
-  return res.json()
-}
 
 const calendarTools: Anthropic.Tool[] = [
   {
@@ -142,9 +129,9 @@ export async function POST(request: Request) {
 
   try {
     if (isCalendarQuery) {
-      const data = await getCalendarEvents()
-      if (data.events?.length > 0) {
-        calendarContext = `\nUPCOMING CALENDAR EVENTS:\n${data.events.map((e: any) => `- [${e.id}] ${e.title} on ${new Date(e.start).toLocaleString()} ${e.recurringEventId ? '(recurring, seriesId: ' + e.recurringEventId + ')' : ''}`).join('\n')}\n`
+      const events = await listEvents()
+      if (events?.length > 0) {
+        calendarContext = `\nUPCOMING CALENDAR EVENTS:\n${events.map((e: any) => `- [${e.id}] ${e.title} on ${new Date(e.start).toLocaleString()} ${e.recurringEventId ? '(recurring, seriesId: ' + e.recurringEventId + ')' : ''}`).join('\n')}\n`
       }
     }
   } catch (e) { calendarContext = '' }
@@ -185,11 +172,11 @@ Today's date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 
     let toolResult: any
     try {
       if (toolUseBlock.name === 'list_calendar_events') {
-        toolResult = await getCalendarEvents()
+        toolResult = { events: await listEvents() }
       } else if (toolUseBlock.name === 'delete_calendar_event') {
-        toolResult = await calendarAction('delete', toolUseBlock.input)
+        toolResult = await deleteEvent(toolUseBlock.input.eventId, toolUseBlock.input.deleteAll || false)
       } else if (toolUseBlock.name === 'create_calendar_event') {
-        toolResult = await calendarAction('create', toolUseBlock.input)
+        toolResult = await createEvent(toolUseBlock.input.title, toolUseBlock.input.start, toolUseBlock.input.end, toolUseBlock.input.allDay || false)
       }
     } catch (e: any) {
       toolResult = { error: e.message }
