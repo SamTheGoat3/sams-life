@@ -82,25 +82,22 @@ export default function Home() {
     const cached = saved ? JSON.parse(saved) : null
 
     if (!cached) {
-      // First time — full scan
-      const [shopify, amazon] = await Promise.all([
-        fetch(`/api/shopify?type=alltime`).then(r => r.json()),
-        fetch(`/api/amazon?type=alltime`).then(r => r.json())
-      ])
-      const amazonOk = !amazon.error && parseFloat(amazon.totalRevenue || 0) > 0
+      // First time — use hardcoded Amazon baseline + fetch Shopify all-time
+      const AMAZON_BASELINE = { revenue: 74005.98, orders: 3883, asOf: '2026-06-04T22:40:00Z' }
+      const shopify = await fetch(`/api/shopify?type=alltime`).then(r => r.json())
       const snapshot = {
         shopifyRevenue: parseFloat(shopify.totalRevenue || 0),
-        amazonRevenue: amazonOk ? parseFloat(amazon.totalRevenue) : null,
+        amazonRevenue: AMAZON_BASELINE.revenue,
         shopifyOrders: shopify.totalOrders || 0,
-        amazonOrders: amazonOk ? (amazon.totalOrders || 0) : null,
-        lastSynced: new Date().toISOString()
+        amazonOrders: AMAZON_BASELINE.orders,
+        lastSynced: AMAZON_BASELINE.asOf
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot))
       setSalesData({
-        totalRevenue: (snapshot.shopifyRevenue + (snapshot.amazonRevenue || 0)).toFixed(2),
-        totalOrders: snapshot.shopifyOrders + (snapshot.amazonOrders || 0),
+        totalRevenue: (snapshot.shopifyRevenue + snapshot.amazonRevenue).toFixed(2),
+        totalOrders: snapshot.shopifyOrders + snapshot.amazonOrders,
         shopify: { totalRevenue: snapshot.shopifyRevenue.toFixed(2), totalOrders: snapshot.shopifyOrders },
-        amazon: { totalRevenue: amazonOk ? amazon.totalRevenue : 'Loading...', totalOrders: amazonOk ? amazon.totalOrders : '—', error: !amazonOk },
+        amazon: { totalRevenue: snapshot.amazonRevenue.toFixed(2), totalOrders: snapshot.amazonOrders },
         lastSynced: snapshot.lastSynced
       })
     } else {
