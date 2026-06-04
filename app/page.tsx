@@ -249,8 +249,7 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <button onClick={() => fetchSales(salesPeriod)} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#888', cursor: 'pointer', fontSize: 16 }}>↺</button>
-              {salesPeriod === 'alltime' && <button onClick={() => { localStorage.removeItem('allTimeSales'); fetchSales('alltime') }} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #444', background: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' as const }}>Reset</button>}
+              <button onClick={() => { if (salesPeriod === 'alltime') { localStorage.removeItem('allTimeSales') } fetchSales(salesPeriod) }} disabled={salesLoading} style={{ padding: '8px 10px', borderRadius: 10, border: '1px solid #444', background: 'none', color: '#f87171', cursor: 'pointer', fontSize: 12, whiteSpace: 'nowrap' as const }}>Reset</button>
             </div>
             {salesLoading ? (
               <div style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Loading...</div>
