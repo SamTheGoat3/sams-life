@@ -16,32 +16,33 @@ export async function GET(request: Request) {
     let createdAtMin: string
 
     if (type === 'today') {
-      const start = new Date(now)
-      start.setHours(0, 0, 0, 0)
-      createdAtMin = start.toISOString()
+      const s = new Date(now); s.setHours(0,0,0,0); createdAtMin = s.toISOString()
     } else if (type === 'week') {
-      const start = new Date(now)
-      start.setDate(start.getDate() - 7)
-      createdAtMin = start.toISOString()
+      const s = new Date(now); s.setDate(s.getDate()-7); createdAtMin = s.toISOString()
     } else if (type === 'month') {
-      const start = new Date(now)
-      start.setDate(1)
-      start.setHours(0, 0, 0, 0)
-      createdAtMin = start.toISOString()
+      const s = new Date(now); s.setDate(1); s.setHours(0,0,0,0); createdAtMin = s.toISOString()
     } else {
       createdAtMin = '2020-01-01T00:00:00Z'
     }
 
-    const [ordersRes, countRes] = await Promise.all([
-      axios.get(`${base}/orders.json?status=any&created_at_min=${createdAtMin}&limit=250&fields=id,total_price,created_at,line_items,customer`, { headers }),
-      axios.get(`${base}/orders/count.json?status=any&created_at_min=${createdAtMin}`, { headers })
-    ])
+    // Paginate through all orders using Link header
+    let allOrders: any[] = []
+    let url: string | null = `${base}/orders.json?status=any&created_at_min=${encodeURIComponent(createdAtMin)}&limit=250&fields=id,total_price,created_at,financial_status`
 
-    const orders = ordersRes.data.orders
-    const totalRevenue = orders.reduce((sum: number, o: any) => sum + parseFloat(o.total_price), 0)
-    const totalOrders = countRes.data.count
+    while (url) {
+      const currentUrl: string = url
+      const res = await axios.get(currentUrl, { headers })
+      allOrders = allOrders.concat(res.data.orders || [])
+      const linkHeader = res.headers['link'] || ''
+      const nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
+      url = nextMatch ? nextMatch[1] : null
+    }
 
-    return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: orders.slice(0, 5) })
+    const totalRevenue = allOrders
+      .filter((o: any) => o.financial_status !== 'refunded' && o.financial_status !== 'voided')
+      .reduce((sum: number, o: any) => sum + parseFloat(o.total_price), 0)
+
+    return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders: allOrders.length, orders: allOrders.slice(0, 5) })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }

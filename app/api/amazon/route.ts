@@ -30,25 +30,30 @@ export async function GET(request: Request) {
       createdAfter = '2020-01-01T00:00:00Z'
     }
 
-    const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', {
-      params: {
-        MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID,
-        CreatedAfter: createdAfter,
-        OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Canceled,Unfulfillable',
-      },
-      headers: {
-        'x-amz-access-token': token,
-        'content-type': 'application/json',
-      }
-    })
+    const headers = { 'x-amz-access-token': token, 'content-type': 'application/json' }
+    const baseParams = {
+      MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID,
+      CreatedAfter: createdAfter,
+      OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Unfulfillable',
+    }
 
-    const orders = res.data.payload?.Orders || []
-    const totalOrders = orders.length
-    const totalRevenue = orders.reduce((sum: number, o: any) => {
-      return sum + parseFloat(o.OrderTotal?.Amount || '0')
-    }, 0)
+    // Paginate through all orders
+    let allOrders: any[] = []
+    let nextToken: string | null = null
 
-    return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: orders.slice(0, 5) })
+    do {
+      const params: any = nextToken ? { NextToken: nextToken, MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID } : baseParams
+      const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', { params, headers })
+      const orders = res.data.payload?.Orders || []
+      allOrders = allOrders.concat(orders)
+      nextToken = res.data.payload?.NextToken || null
+      if (nextToken) await new Promise(r => setTimeout(r, 500)) // avoid rate limiting
+    } while (nextToken && allOrders.length < 5000)
+
+    const totalOrders = allOrders.length
+    const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
+
+    return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) })
   } catch (e: any) {
     return NextResponse.json({ error: e.response?.data?.errors?.[0]?.message || e.message }, { status: 500 })
   }
