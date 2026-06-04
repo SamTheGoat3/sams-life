@@ -56,9 +56,13 @@ export default function Home() {
     setSalesLoading(true)
     setSalesPeriod(period)
     try {
-      const res = await fetch(`/api/shopify?type=${period}`)
-      const data = await res.json()
-      setSalesData(data)
+      const [shopify, amazon] = await Promise.all([
+        fetch(`/api/shopify?type=${period}`).then(r => r.json()),
+        fetch(`/api/amazon?type=${period}`).then(r => r.json())
+      ])
+      const totalRevenue = (parseFloat(shopify.totalRevenue || 0) + parseFloat(amazon.totalRevenue || 0)).toFixed(2)
+      const totalOrders = (shopify.totalOrders || 0) + (amazon.totalOrders || 0)
+      setSalesData({ totalRevenue, totalOrders, shopify, amazon })
     } catch {
       setSalesData({ error: 'Could not load sales data' })
     }
@@ -175,17 +179,26 @@ export default function Home() {
             ) : salesData ? (
               <>
                 <div style={styles.card}>
-                  <div style={styles.label}>Revenue</div>
+                  <div style={styles.label}>Total Revenue</div>
                   <div style={styles.bigNum}>${salesData.totalRevenue}</div>
+                  <div style={styles.label}>{salesData.totalOrders} orders combined</div>
                 </div>
-                <div style={styles.card}>
-                  <div style={styles.label}>Orders</div>
-                  <div style={styles.bigNum}>{salesData.totalOrders}</div>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                  <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
+                    <div style={styles.label}>Shopify</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.shopify?.totalRevenue || '0.00'}</div>
+                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.shopify?.totalOrders || 0} orders</div>
+                  </div>
+                  <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
+                    <div style={styles.label}>Amazon</div>
+                    <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.amazon?.totalRevenue || '0.00'}</div>
+                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.amazon?.totalOrders || 0} orders</div>
+                  </div>
                 </div>
-                {salesData.orders?.length > 0 && (
+                {salesData.shopify?.orders?.length > 0 && (
                   <div style={styles.card}>
-                    <div style={{ ...styles.label, marginBottom: 12 }}>Recent Orders</div>
-                    {salesData.orders.map((o: any, i: number) => (
+                    <div style={{ ...styles.label, marginBottom: 12 }}>Recent Shopify Orders</div>
+                    {salesData.shopify.orders.map((o: any, i: number) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: i > 0 ? '1px solid #333' : 'none' }}>
                         <span style={{ color: '#ccc', fontSize: 14 }}>{new Date(o.created_at).toLocaleDateString()}</span>
                         <span style={{ fontWeight: 700 }}>${parseFloat(o.total_price).toFixed(2)}</span>
