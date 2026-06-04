@@ -154,44 +154,50 @@ You have tools to manage Sam's Google Calendar — you can list events, create n
 
 Today's date: ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
 
-  const anthropicMessages = messages.map((m: any) => ({ role: m.role, content: m.content }))
+  const anthropicMessages: any[] = messages.map((m: any) => ({ role: m.role, content: m.content }))
+  const runningMessages = [...anthropicMessages]
 
   let response = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1024,
     system,
     tools: calendarTools,
-    messages: anthropicMessages
+    messages: runningMessages
   })
 
-  // Handle tool use loop
-  while (response.stop_reason === 'tool_use') {
-    const toolUseBlock = response.content.find((b: any) => b.type === 'tool_use') as any
-    if (!toolUseBlock) break
+  // Handle tool use loop — accumulate messages for multi-step tool calls
+  let iterations = 0
+  while (response.stop_reason === 'tool_use' && iterations < 20) {
+    iterations++
+    runningMessages.push({ role: 'assistant', content: response.content })
 
-    let toolResult: any
-    try {
-      if (toolUseBlock.name === 'list_calendar_events') {
-        toolResult = { events: await listEvents() }
-      } else if (toolUseBlock.name === 'delete_calendar_event') {
-        toolResult = await deleteEvent(toolUseBlock.input.eventId, toolUseBlock.input.deleteAll || false)
-      } else if (toolUseBlock.name === 'create_calendar_event') {
-        toolResult = await createEvent(toolUseBlock.input.title, toolUseBlock.input.start, toolUseBlock.input.end, toolUseBlock.input.allDay || false)
+    const toolUseBlocks = response.content.filter((b: any) => b.type === 'tool_use') as any[]
+    const toolResults: any[] = []
+
+    for (const toolBlock of toolUseBlocks) {
+      let toolResult: any
+      try {
+        if (toolBlock.name === 'list_calendar_events') {
+          toolResult = { events: await listEvents() }
+        } else if (toolBlock.name === 'delete_calendar_event') {
+          toolResult = await deleteEvent(toolBlock.input.eventId, toolBlock.input.deleteAll || false)
+        } else if (toolBlock.name === 'create_calendar_event') {
+          toolResult = await createEvent(toolBlock.input.title, toolBlock.input.start, toolBlock.input.end, toolBlock.input.allDay || false)
+        }
+      } catch (e: any) {
+        toolResult = { error: e.message }
       }
-    } catch (e: any) {
-      toolResult = { error: e.message }
+      toolResults.push({ type: 'tool_result', tool_use_id: toolBlock.id, content: JSON.stringify(toolResult) })
     }
+
+    runningMessages.push({ role: 'user', content: toolResults })
 
     response = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system,
       tools: calendarTools,
-      messages: [
-        ...anthropicMessages,
-        { role: 'assistant', content: response.content },
-        { role: 'user', content: [{ type: 'tool_result', tool_use_id: toolUseBlock.id, content: JSON.stringify(toolResult) }] }
-      ]
+      messages: runningMessages
     })
   }
 
