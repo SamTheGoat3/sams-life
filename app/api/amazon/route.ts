@@ -62,6 +62,21 @@ export async function GET(request: Request) {
     } while (nextToken)
 
     const totalOrders = allOrders.length
+
+    // Fetch order items for Pending orders (no OrderTotal yet)
+    const pendingOrders = allOrders.filter((o: any) => !o.OrderTotal?.Amount)
+    for (const order of pendingOrders) {
+      try {
+        const itemsRes = await axios.get(
+          `https://sellingpartnerapi-na.amazon.com/orders/v0/orders/${order.AmazonOrderId}/orderItems`,
+          { headers }
+        )
+        const items = itemsRes.data.payload?.OrderItems || []
+        const orderTotal = items.reduce((s: number, item: any) => s + parseFloat(item.ItemPrice?.Amount || '0'), 0)
+        order.OrderTotal = { Amount: orderTotal.toFixed(2), CurrencyCode: 'USD' }
+      } catch { /* skip if can't fetch items */ }
+    }
+
     const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
 
     const result = { totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) }
