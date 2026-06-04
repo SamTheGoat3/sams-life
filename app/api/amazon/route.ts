@@ -31,30 +31,29 @@ export async function GET(request: Request) {
     }
 
     const headers = { 'x-amz-access-token': token, 'content-type': 'application/json' }
-    const baseParams = {
-      MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID,
-      CreatedAfter: createdAfter,
-      OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Unfulfillable',
-    }
-
-    // Paginate through all orders
     let allOrders: any[] = []
     let nextToken: string | null = null
 
     do {
-      const params: any = nextToken ? { NextToken: nextToken, MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID } : baseParams
+      const params: any = nextToken
+        ? { NextToken: nextToken, MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID }
+        : {
+            MarketplaceIds: process.env.AMAZON_MARKETPLACE_ID,
+            CreatedAfter: createdAfter,
+            OrderStatuses: 'Unshipped,PartiallyShipped,Shipped,InvoiceUnconfirmed,Unfulfillable',
+          }
+
       const res = await axios.get('https://sellingpartnerapi-na.amazon.com/orders/v0/orders', { params, headers })
-      const orders = res.data.payload?.Orders || []
-      allOrders = allOrders.concat(orders)
+      allOrders = allOrders.concat(res.data.payload?.Orders || [])
       nextToken = res.data.payload?.NextToken || null
-      if (nextToken) await new Promise(r => setTimeout(r, 500)) // avoid rate limiting
-    } while (nextToken && allOrders.length < 5000)
+    } while (nextToken && allOrders.length < 500)
 
     const totalOrders = allOrders.length
     const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
 
     return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) })
   } catch (e: any) {
-    return NextResponse.json({ error: e.response?.data?.errors?.[0]?.message || e.message }, { status: 500 })
+    const msg = e.response?.data?.errors?.[0]?.message || e.message
+    return NextResponse.json({ error: msg, totalRevenue: '0.00', totalOrders: 0 }, { status: 200 })
   }
 }
