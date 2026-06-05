@@ -179,39 +179,39 @@ export default function Home() {
   const progress = Math.min(((currentWeight - 160) / (175 - 160)) * 100, 100)
 
   const styles = {
-    container: { display: 'flex', flexDirection: 'column' as const, height: '100dvh', background: '#0f0f0f', color: '#fff' },
-    header: { padding: '16px 20px 8px', borderBottom: '1px solid #1a1a1a' },
-    title: { fontSize: 22, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #fff 0%, #888 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
-    tabs: { display: 'flex', gap: 4, padding: '8px 20px', borderBottom: '1px solid #1a1a1a' },
+    container: { display: 'flex', flexDirection: 'column' as const, height: '100dvh', background: '#ffffff', color: '#111' },
+    header: { padding: '16px 20px 8px', borderBottom: '1px solid #f0f0f0' },
+    title: { fontSize: 22, fontWeight: 700, margin: 0, color: '#111' },
+    tabs: { display: 'flex', gap: 6, padding: '10px 16px', borderBottom: '1px solid #f0f0f0' },
     tab: (active: boolean) => ({
       flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-      background: active ? '#fff' : '#1a1a1a', color: active ? '#000' : '#888',
-      fontWeight: active ? 700 : 400, fontSize: 14, transition: 'all 0.2s'
+      background: active ? '#111' : '#f5f5f5', color: active ? '#fff' : '#888',
+      fontWeight: active ? 700 : 400, fontSize: 13, transition: 'all 0.2s'
     }),
     content: { flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' as const },
-    messages: { flex: 1, overflowY: 'auto' as const, padding: '16px 20px', display: 'flex', flexDirection: 'column' as const, gap: 12 },
+    messages: { flex: 1, overflowY: 'auto' as const, padding: '16px 20px', display: 'flex', flexDirection: 'column' as const, gap: 10 },
     bubble: (role: string) => ({
-      maxWidth: '80%', padding: '12px 16px', borderRadius: role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-      background: role === 'user' ? '#fff' : '#1a1a1a', color: role === 'user' ? '#000' : '#fff',
+      maxWidth: '80%', padding: '11px 15px', borderRadius: role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+      background: role === 'user' ? '#111' : '#f5f5f5', color: role === 'user' ? '#fff' : '#111',
       alignSelf: role === 'user' ? 'flex-end' : 'flex-start', fontSize: 15, lineHeight: 1.5, whiteSpace: 'pre-wrap' as const
     }),
-    inputRow: { display: 'flex', gap: 8, padding: '12px 20px 20px', borderTop: '1px solid #1a1a1a' },
-    input: { flex: 1, padding: '12px 16px', borderRadius: 24, border: '1px solid #333', background: '#1a1a1a', color: '#fff', fontSize: 16, outline: 'none' },
-    sendBtn: { padding: '12px 20px', borderRadius: 24, border: 'none', background: '#fff', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: 15 },
+    inputRow: { display: 'flex', gap: 8, padding: '12px 16px 20px', borderTop: '1px solid #f0f0f0' },
+    input: { flex: 1, padding: '12px 16px', borderRadius: 24, border: '1px solid #e5e5e5', background: '#f5f5f5', color: '#111', fontSize: 16, outline: 'none' },
+    sendBtn: { padding: '12px 20px', borderRadius: 24, border: 'none', background: '#111', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15 },
     salesContent: { flex: 1, overflowY: 'auto' as const, padding: 20 },
-    card: { background: '#1a1a1a', borderRadius: 16, padding: 20, marginBottom: 16 },
-    bigNum: { fontSize: 42, fontWeight: 800, margin: '8px 0 4px' },
+    card: { background: '#f5f5f5', borderRadius: 16, padding: 20, marginBottom: 16 },
+    bigNum: { fontSize: 42, fontWeight: 800, margin: '8px 0 4px', color: '#111' },
     label: { color: '#888', fontSize: 14 },
-    periodRow: { display: 'flex', gap: 8, marginBottom: 20 },
+    periodRow: { display: 'flex', gap: 6, marginBottom: 20 },
     periodBtn: (active: boolean) => ({
       flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-      background: active ? '#fff' : '#1a1a1a', color: active ? '#000' : '#888', fontWeight: active ? 700 : 400, fontSize: 13
+      background: active ? '#111' : '#f5f5f5', color: active ? '#fff' : '#888', fontWeight: active ? 700 : 400, fontSize: 13
     }),
     workoutContent: { flex: 1, overflowY: 'auto' as const, padding: 20 },
-    progressBar: { height: 8, background: '#1a1a1a', borderRadius: 4, overflow: 'hidden', marginTop: 8 },
-    progressFill: { height: '100%', background: 'linear-gradient(90deg, #4ade80, #22d3ee)', borderRadius: 4, transition: 'width 0.5s' },
-    textInput: { width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #333', background: '#1a1a1a', color: '#fff', fontSize: 15, outline: 'none', boxSizing: 'border-box' as const },
-    logBtn: { width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#fff', color: '#000', fontWeight: 700, cursor: 'pointer', fontSize: 15, marginTop: 8 },
+    progressBar: { height: 8, background: '#e5e5e5', borderRadius: 4, overflow: 'hidden', marginTop: 8 },
+    progressFill: { height: '100%', background: 'linear-gradient(90deg, #22c55e, #06b6d4)', borderRadius: 4, transition: 'width 0.5s' },
+    textInput: { width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid #e5e5e5', background: '#f5f5f5', color: '#111', fontSize: 15, outline: 'none', boxSizing: 'border-box' as const },
+    logBtn: { width: '100%', padding: '12px 0', borderRadius: 12, border: 'none', background: '#111', color: '#fff', fontWeight: 700, cursor: 'pointer', fontSize: 15, marginTop: 8 },
   }
 
   return (
@@ -231,7 +231,7 @@ export default function Home() {
         {tab === 'chat' && (
           <>
             <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 20px 0' }}>
-              <button onClick={clearChat} style={{ fontSize: 12, color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}>Clear chat</button>
+              <button onClick={clearChat} style={{ fontSize: 12, color: '#999', background: 'none', border: 'none', cursor: 'pointer' }}>Clear chat</button>
             </div>
             <div style={styles.messages}>
               {messages.map((m, i) => (
@@ -274,27 +274,27 @@ export default function Home() {
                   <div style={styles.bigNum}>${salesData.totalRevenue}</div>
                   <div style={styles.label}>{salesData.totalOrders} orders combined</div>
                   {salesData.lastSynced && (
-                    <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>
+                    <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>Synced {new Date(salesData.lastSynced).toLocaleString()}</div>
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
                     <div style={styles.label}>Shopify</div>
                     <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.shopify?.totalRevenue || '0.00'}</div>
-                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.shopify?.totalOrders || 0} orders</div>
+                    <div style={{ color: '#999', fontSize: 13 }}>{salesData.shopify?.totalOrders || 0} orders</div>
                     {salesData.shopify?.error && <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>{salesData.shopify.error}</div>}
                   </div>
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
                     <div style={styles.label}>Amazon</div>
                     <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.amazon?.totalRevenue || '0.00'}</div>
-                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.amazon?.totalOrders || 0} orders{salesData.amazon?.pendingCount > 0 ? ` (${salesData.amazon.pendingCount} pending)` : ''}</div>
+                    <div style={{ color: '#999', fontSize: 13 }}>{salesData.amazon?.totalOrders || 0} orders{salesData.amazon?.pendingCount > 0 ? ` (${salesData.amazon.pendingCount} pending)` : ''}</div>
                   </div>
                 </div>
                 {salesData.shopify?.orders?.length > 0 && (
                   <div style={styles.card}>
                     <div style={{ ...styles.label, marginBottom: 12 }}>Recent Shopify Orders</div>
                     {salesData.shopify.orders.map((o: any, i: number) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: i > 0 ? '1px solid #333' : 'none' }}>
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: i > 0 ? '1px solid #e5e5e5' : 'none' }}>
                         <span style={{ color: '#ccc', fontSize: 14 }}>{new Date(o.created_at).toLocaleDateString()}</span>
                         <span style={{ fontWeight: 700 }}>${parseFloat(o.total_price).toFixed(2)}</span>
                       </div>
@@ -310,14 +310,14 @@ export default function Home() {
           <div style={{ flex: 1, overflowY: 'auto' as const, padding: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div style={{ fontSize: 18, fontWeight: 700 }}>Next 14 Days</div>
-              <button onClick={fetchCalendar} disabled={calendarLoading} style={{ padding: '6px 12px', borderRadius: 10, border: 'none', background: '#1a1a1a', color: '#888', cursor: 'pointer', fontSize: 14 }}>↺ Refresh</button>
+              <button onClick={fetchCalendar} disabled={calendarLoading} style={{ padding: '6px 12px', borderRadius: 10, border: 'none', background: '#f5f5f5', color: '#888', cursor: 'pointer', fontSize: 14 }}>↺ Refresh</button>
             </div>
             {calendarLoading ? (
               <div style={{ color: '#888', textAlign: 'center', marginTop: 40 }}>Loading...</div>
             ) : calendarError ? (
               <div style={{ ...styles.card, color: '#f87171' }}>{calendarError}</div>
             ) : calendarEvents.length === 0 ? (
-              <div style={{ color: '#555', textAlign: 'center', marginTop: 40 }}>No events in the next 14 days</div>
+              <div style={{ color: '#999', textAlign: 'center', marginTop: 40 }}>No events in the next 14 days</div>
             ) : (() => {
               const today = new Date(); today.setHours(0,0,0,0)
               const groups: Record<string, any[]> = {}
@@ -341,7 +341,7 @@ export default function Home() {
                         </div>
                       )}
                       {e.allDay && <div style={{ color: '#888', fontSize: 13, marginTop: 4 }}>All day</div>}
-                      {e.location && <div style={{ color: '#555', fontSize: 12, marginTop: 4 }}>{e.location}</div>}
+                      {e.location && <div style={{ color: '#999', fontSize: 12, marginTop: 4 }}>{e.location}</div>}
                     </div>
                   ))}
                 </div>
@@ -379,16 +379,16 @@ export default function Home() {
             <div style={styles.card}>
               <div style={{ ...styles.label, marginBottom: 12 }}>Recent Workouts</div>
               {workoutLog.length === 0 ? (
-                <div style={{ color: '#555', fontSize: 14 }}>No workouts logged yet.</div>
+                <div style={{ color: '#999', fontSize: 14 }}>No workouts logged yet.</div>
               ) : [...workoutLog].reverse().slice(0, 7).map((w, i) => (
-                <div key={i} style={{ padding: '8px 0', borderTop: i > 0 ? '1px solid #333' : 'none' }}>
+                <div key={i} style={{ padding: '8px 0', borderTop: i > 0 ? '1px solid #e5e5e5' : 'none' }}>
                   <div style={{ color: '#888', fontSize: 12 }}>{w.date}</div>
                   <div style={{ fontSize: 14, marginTop: 2 }}>{w.workout}</div>
                 </div>
               ))}
             </div>
 
-            <div style={{ ...styles.card, background: 'transparent', border: '1px solid #333' }}>
+            <div style={{ ...styles.card, background: 'transparent', border: '1px solid #e5e5e5' }}>
               <div style={{ ...styles.label, marginBottom: 8 }}>💡 Need a workout?</div>
               <div style={{ fontSize: 14, color: '#888' }}>Switch to the Chat tab and ask me for today's workout — I'll give you something fresh.</div>
             </div>
