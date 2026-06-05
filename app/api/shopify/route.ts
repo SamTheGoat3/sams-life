@@ -46,6 +46,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ totalRevenue: totalRevenue.toFixed(2), totalOrders: allOrders.length, orders: allOrders.slice(0, 5) })
   } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    const msg = e.response?.data?.errors || e.response?.data || e.message
+    return NextResponse.json({ error: typeof msg === 'string' ? msg : JSON.stringify(msg), totalRevenue: '0.00', totalOrders: 0 }, { status: 200 })
   }
 }

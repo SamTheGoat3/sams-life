@@ -269,6 +269,7 @@ export default function Home() {
                     <div style={styles.label}>Shopify</div>
                     <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.shopify?.totalRevenue || '0.00'}</div>
                     <div style={{ color: '#555', fontSize: 13 }}>{salesData.shopify?.totalOrders || 0} orders</div>
+                    {salesData.shopify?.error && <div style={{ color: '#f87171', fontSize: 11, marginTop: 4 }}>{salesData.shopify.error}</div>}
                   </div>
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
                     <div style={styles.label}>Amazon</div>
