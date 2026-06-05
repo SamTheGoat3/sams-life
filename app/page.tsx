@@ -7,9 +7,8 @@ type Tab = 'chat' | 'sales' | 'workout' | 'calendar'
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('chat')
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: "Hey Sam 👋 I'm your personal assistant. Ask me anything — sales, workouts, schedule, whatever you need." }
-  ])
+  const WELCOME = "Hey Sam 👋 I'm your personal assistant. Ask me anything — sales, workouts, schedule, whatever you need."
+  const [messages, setMessages] = useState<Message[]>([{ role: 'assistant', content: WELCOME }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [salesData, setSalesData] = useState<any>(null)
@@ -29,6 +28,8 @@ export default function Home() {
   }, [messages])
 
   useEffect(() => {
+    const savedMessages = localStorage.getItem('chatHistory')
+    if (savedMessages) setMessages(JSON.parse(savedMessages))
     const saved = localStorage.getItem('workoutLog')
     if (saved) setWorkoutLog(JSON.parse(saved))
     const savedWeight = localStorage.getItem('weightLog')
@@ -39,20 +40,29 @@ export default function Home() {
     if (!input.trim() || loading) return
     const newMessages: Message[] = [...messages, { role: 'user', content: input }]
     setMessages(newMessages)
+    localStorage.setItem('chatHistory', JSON.stringify(newMessages.slice(-60)))
     setInput('')
     setLoading(true)
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages, workoutLog })
+        body: JSON.stringify({ messages: newMessages.slice(-20), workoutLog })
       })
       const data = await res.json()
-      setMessages([...newMessages, { role: 'assistant', content: data.content }])
+      const finalMessages = [...newMessages, { role: 'assistant' as const, content: data.content }]
+      setMessages(finalMessages)
+      localStorage.setItem('chatHistory', JSON.stringify(finalMessages.slice(-60)))
     } catch {
       setMessages([...newMessages, { role: 'assistant', content: 'Something went wrong. Try again.' }])
     }
     setLoading(false)
+  }
+
+  function clearChat() {
+    const fresh = [{ role: 'assistant' as const, content: WELCOME }]
+    setMessages(fresh)
+    localStorage.setItem('chatHistory', JSON.stringify(fresh))
   }
 
   async function fetchSales(period: string, bust = false) {
@@ -220,6 +230,9 @@ export default function Home() {
       <div style={styles.content}>
         {tab === 'chat' && (
           <>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '4px 20px 0' }}>
+              <button onClick={clearChat} style={{ fontSize: 12, color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}>Clear chat</button>
+            </div>
             <div style={styles.messages}>
               {messages.map((m, i) => (
                 <div key={i} style={styles.bubble(m.role)}>{m.content}</div>
