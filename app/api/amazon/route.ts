@@ -61,25 +61,12 @@ export async function GET(request: Request) {
       nextToken = res.data.payload?.NextToken || null
     } while (nextToken)
 
+    const confirmedOrders = allOrders.filter((o: any) => o.OrderTotal?.Amount)
+    const pendingCount = allOrders.filter((o: any) => o.OrderStatus === 'Pending').length
     const totalOrders = allOrders.length
+    const totalRevenue = confirmedOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
 
-    // Fetch order items for Pending orders (no OrderTotal yet)
-    const pendingOrders = allOrders.filter((o: any) => !o.OrderTotal?.Amount)
-    for (const order of pendingOrders) {
-      try {
-        const itemsRes = await axios.get(
-          `https://sellingpartnerapi-na.amazon.com/orders/v0/orders/${order.AmazonOrderId}/orderItems`,
-          { headers }
-        )
-        const items = itemsRes.data.payload?.OrderItems || []
-        const orderTotal = items.reduce((s: number, item: any) => s + parseFloat(item.ItemPrice?.Amount || '0'), 0)
-        order.OrderTotal = { Amount: orderTotal.toFixed(2), CurrencyCode: 'USD' }
-      } catch { /* skip if can't fetch items */ }
-    }
-
-    const totalRevenue = allOrders.reduce((sum: number, o: any) => sum + parseFloat(o.OrderTotal?.Amount || '0'), 0)
-
-    const result = { totalRevenue: totalRevenue.toFixed(2), totalOrders, orders: allOrders.slice(0, 5) }
+    const result = { totalRevenue: totalRevenue.toFixed(2), totalOrders, pendingCount, orders: allOrders.slice(0, 5) }
     cache[type] = { data: result, ts: Date.now() }
     return NextResponse.json(result)
   } catch (e: any) {

@@ -273,7 +273,7 @@ export default function Home() {
                   <div style={{ ...styles.card, flex: 1, marginBottom: 0 }}>
                     <div style={styles.label}>Amazon</div>
                     <div style={{ fontSize: 24, fontWeight: 800, margin: '6px 0 2px' }}>${salesData.amazon?.totalRevenue || '0.00'}</div>
-                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.amazon?.totalOrders || 0} orders</div>
+                    <div style={{ color: '#555', fontSize: 13 }}>{salesData.amazon?.totalOrders || 0} orders{salesData.amazon?.pendingCount > 0 ? ` (${salesData.amazon.pendingCount} pending)` : ''}</div>
                   </div>
                 </div>
                 {salesData.shopify?.orders?.length > 0 && (
