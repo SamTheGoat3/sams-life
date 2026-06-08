@@ -21,6 +21,7 @@ export default function Home() {
   const [calendarEvents, setCalendarEvents] = useState<any[]>([])
   const [calendarLoading, setCalendarLoading] = useState(false)
   const [calendarError, setCalendarError] = useState('')
+  const [whoopData, setWhoopData] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -142,7 +143,16 @@ export default function Home() {
   useEffect(() => {
     if (tab === 'sales') fetchSales('today')
     if (tab === 'calendar') fetchCalendar()
+    if (tab === 'workout' && !whoopData) fetchWhoop()
   }, [tab])
+
+  async function fetchWhoop() {
+    try {
+      const res = await fetch('/api/whoop')
+      const data = await res.json()
+      setWhoopData(data)
+    } catch { setWhoopData(null) }
+  }
 
   async function fetchCalendar() {
     setCalendarLoading(true)
@@ -352,6 +362,57 @@ export default function Home() {
 
         {tab === 'workout' && (
           <div style={styles.workoutContent}>
+
+            {/* WHOOP card */}
+            {whoopData && !whoopData.error && (
+              <div style={{ ...styles.card, background: '#0a0a0a', color: '#fff', marginBottom: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 1, color: '#888' }}>WHOOP TODAY</div>
+                  <button onClick={fetchWhoop} style={{ fontSize: 12, color: '#555', background: 'none', border: 'none', cursor: 'pointer' }}>↺</button>
+                </div>
+                {whoopData.recovery && (
+                  <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>RECOVERY</div>
+                      <div style={{
+                        fontSize: 32, fontWeight: 800,
+                        color: whoopData.recovery.score >= 67 ? '#22c55e' : whoopData.recovery.score >= 34 ? '#eab308' : '#ef4444'
+                      }}>{whoopData.recovery.score}%</div>
+                    </div>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>HRV</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{whoopData.recovery.hrv}</div>
+                      <div style={{ fontSize: 11, color: '#555' }}>ms</div>
+                    </div>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>RHR</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{whoopData.recovery.restingHr}</div>
+                      <div style={{ fontSize: 11, color: '#555' }}>bpm</div>
+                    </div>
+                  </div>
+                )}
+                {whoopData.strain && (
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>STRAIN</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#06b6d4' }}>{whoopData.strain.score}</div>
+                    </div>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>CALS</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{whoopData.strain.calories}</div>
+                    </div>
+                    <div style={{ flex: 1, background: '#1a1a1a', borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>AVG HR</div>
+                      <div style={{ fontSize: 32, fontWeight: 800, color: '#fff' }}>{whoopData.strain.avgHr}</div>
+                    </div>
+                  </div>
+                )}
+                {whoopData.error === 'token_expired' && (
+                  <div style={{ color: '#f87171', fontSize: 13 }}>WHOOP token expired — run <code>node get-whoop-token.js</code> to reconnect</div>
+                )}
+              </div>
+            )}
+
             <div style={styles.card}>
               <div style={styles.label}>Weight Goal: 160 → 175 lbs</div>
               <div style={styles.bigNum}>{currentWeight} lbs</div>
