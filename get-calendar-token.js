@@ -1,8 +1,8 @@
 const { createServer } = require('http')
 const { exec } = require('child_process')
 
-const CLIENT_ID = '30763606043-up9ijb7urticc3nvj8qr2m1o81cv5q3n.apps.googleusercontent.com'
-const CLIENT_SECRET = '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'
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID
+const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET
 const REDIRECT_URI = 'http://localhost:3333/callback'
 
 const scope = encodeURIComponent([
